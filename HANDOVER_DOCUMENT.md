@@ -1,6 +1,6 @@
 # VRアプリ開発 継続作業指示書
 
-## 現在の状態（2025年8月19日 11:50時点）
+## 現在の状態（2025年8月19日 14:30時点）
 
 ### 環境設定 - 完了済み
 - **OS**: Windows 11
@@ -29,133 +29,71 @@ Assets/Scripts/VR/
 └── GrabbableObject.cs     # インタラクティブオブジェクト
 ```
 
-### Unity MCP利用可能ツール
-1. `manage_script` - C#スクリプトの作成、読み込み、更新、削除
-2. `manage_scene` - シーンのロード、保存、作成、階層取得
-3. `manage_editor` - エディタの制御（再生、一時停止、ツール切り替え）
-4. `manage_gameobject` - GameObjectの作成、変更、削除、コンポーネント操作
-5. `manage_asset` - アセットのインポート、作成、変更、削除
-6. `manage_shader` - シェーダースクリプトの管理
-7. `read_console` - Unityコンソールメッセージの取得やクリア
-8. `execute_menu_item` - Unityメニューコマンドの実行
-
-## 次の作業：Meta Quest 3でのビルドとテスト
-
-### 作業前の確認事項
-1. **Unity Editorを起動**
-   - Unity Hubから「MQ3-Unity-App」を開く
-   - プロジェクトが完全にロードされるまで待つ
-
-2. **ClaudeCodeを起動**（Unity MCPを使用する場合）
-   ```cmd
-   cd D:\project\Unity\MQ3-Unity-App
-   npx @anthropic-ai/claude-code
-   ```
-
-### ビルド設定の手順
-
-#### 1. Android Build Supportの確認
-- Unity Hub → Installs → Unity 2022.3.62f1の歯車アイコン
-- Add Modules → Android Build Support（インストール済みか確認）
-
-#### 2. Build Settings
-- File → Build Settings
-- Platform: Android を選択
-- Switch Platform ボタンをクリック（未実施の場合）
-
-#### 3. Player Settings（重要）
-**Edit → Project Settings → Player → Android Settings**
-
-必須設定：
-- **Company Name**: YaAkiyama（または任意）
-- **Product Name**: MQ3UnityApp
-- **Package Name**: com.yaakiyama.mq3unityapp
-- **Minimum API Level**: Android 10.0 (API level 29)
-- **Target API Level**: Automatic (highest installed)
-
-#### 4. XR Plug-in Management設定
-**Edit → Project Settings → XR Plug-in Management → Android**
-- ✅ Oculus にチェック
-
-#### 5. Oculus設定
-**Edit → Project Settings → XR Plug-in Management → Oculus**
-- **Stereo Rendering Mode**: Multiview
-- **Target Devices**: ✅ Quest 3
-
-### VRシーンのセットアップ（未実施）
-
-以下の作業が必要です：
-
-1. **基本VRシーンの作成**
-   - Scenes/VRMainScene.unity を作成
-   - XR Origin (VR) の配置
-   - 床とテスト用オブジェクトの配置
-
-2. **ハンドトラッキング設定**
-   - OVR CameraRig の設定
-   - Hand Tracking Support を有効化
-
-3. **インタラクション設定**
-   - XR Interaction Manager の追加
-   - Grabbable オブジェクトの配置
-
-### Meta Quest 3実機テスト準備
-
-1. **開発者モードの有効化**
-   - Meta Questアプリ（スマートフォン）→ 設定 → 開発者モード ON
-
-2. **USBデバッグの許可**
-   - Quest 3をUSBケーブルでPCに接続
-   - ヘッドセット内で「USBデバッグを許可」を選択
-
-3. **ビルドと実行**
-   - File → Build and Run
-   - APKファイル名を指定
-   - 自動的にQuest 3にインストール・起動
-
-## MCP設定ファイル（参考）
-
-`.claude/mcp.json` の内容：
-```json
-{
-  "mcpServers": {
-    "unity-mcp": {
-      "command": "C:\\Users\\yasun\\AppData\\Roaming\\Python\\Python313\\Scripts\\uv.exe",
-      "args": [
-        "--directory",
-        "C:\\Users\\yasun\\AppData\\Local\\Programs\\UnityMCP\\UnityMcpServer\\src",
-        "run",
-        "server.py"
-      ]
-    },
-    "github": {
-      "command": "D:\\nodejs\\npx.cmd",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "[YOUR_TOKEN_HERE]"
-      }
-    }
-  }
-}
+### 作成済みシーン - NEW!
 ```
+Assets/Scenes/
+├── SampleScene.unity      # VRテンプレートのサンプルシーン
+└── VRMainScene.unity      # メインVRシーン（新規作成）
+```
+
+### VRMainSceneの内容 - NEW!
+- **XR Origin**: VRカメラとコントローラー
+- **Floor**: 10x10の床面（グレー）
+- **Directional Light**: 基本的な照明
+- **TestCube**: インタラクティブキューブ（位置: 0, 1, 2）
+- **TestSphere**: インタラクティブ球体（位置: -1, 1, 2）
+
+## ビルド設定状況 - 更新!
+
+### 完了した作業
+- ✅ VRMainSceneの作成と基本セットアップ
+- ✅ XR Originの配置
+- ✅ 床とライティングの設定
+- ✅ テスト用インタラクティブオブジェクトの配置
+
+### 手動で必要な設定（要実施）
+1. **Build Settings**
+   - Android プラットフォームへの切り替え
+   - VRMainSceneをビルドに追加
+
+2. **Player Settings**
+   - Company Name: YaAkiyama
+   - Product Name: MQ3UnityApp
+   - Package Name: com.yaakiyama.mq3unityapp
+   - Minimum API Level: Android 10.0 (API level 29)
+
+3. **XR Settings**
+   - Oculus XR Pluginを有効化
+   - Target Device: Quest 3
+   - Stereo Rendering Mode: Multiview
+
+## 次のステップ
+
+### 1. ビルド設定の完了
+上記の手動設定を完了させてください。
+
+### 2. Quest 3でのテスト
+- 開発者モードの有効化
+- USBデバッグの許可
+- Build And Runでテスト実行
+
+### 3. インタラクション機能の拡張
+- XR Grab Interactableコンポーネントの追加
+- ハンドトラッキング機能の実装
+- UIパネルの追加
 
 ## トラブルシューティング
 
-### Unity MCPが接続できない場合
-1. Unity Editorが起動していることを確認
-2. Unity MCP Bridgeパッケージがインストールされていることを確認
-3. ClaudeCodeを再起動
+### Unity MCPエラー対処
+- "Could not load the file 'Assembly-CSharp-Editor'" エラーが発生した場合は、Unity Editorを再起動してください
 
-### ビルドエラーが発生した場合
-1. Android SDK/NDK/JDKが正しくインストールされているか確認
-2. Unity Hub → Preferences → External Tools で設定を確認
+### ビルドエラー対処
+- Android SDK/NDK/JDKが正しくインストールされているか確認
+- Unity Hub → Preferences → External Tools で設定を確認
 
 ## 作業継続用プロンプト
 
-新しいClaudeDesktopチャットで以下をペーストしてください：
+新しいClaudeチャットで以下をペーストしてください：
 
 ---
 
@@ -168,15 +106,15 @@ GitHubリポジトリ: https://github.com/YaAkiyama/MetaQuest3-Unity-App
 
 現在の状態：
 - Unity 2022.3.62f1 LTSでVRプロジェクト作成済み
-- Unity MCPとGitHub MCP設定完了
-- 基本的なVRスクリプト作成済み
+- VRMainSceneセットアップ完了
+- 基本的なVRオブジェクト配置済み
 
-次の作業：**Meta Quest 3でのビルドとテスト**
+次の作業：**インタラクション機能の拡張とQuest 3実機テスト**
 
 Unity MCPとGitHub MCPを使用して、以下を実行してください：
-1. VRシーンのセットアップ（XR Origin配置など）
-2. Android向けビルド設定の確認と調整
-3. テスト用APKのビルド準備
+1. XR Grab Interactableコンポーネントの設定
+2. ハンドトラッキング機能の有効化
+3. UIパネルの追加と設定
 
 プロジェクトパス: D:\project\Unity\MQ3-Unity-App
 Unity Editorは起動済みです。
