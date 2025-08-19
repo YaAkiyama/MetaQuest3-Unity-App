@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "unity-mcp": {
+      "command": "C:\\Users\\yasun\\AppData\\Roaming\\Python\\Python313\\Scripts\\uv.exe",
+      "args": [
+        "--directory",
+        "C:\\Users\\yasun\\AppData\\Local\\Programs\\UnityMCP\\UnityMcpServer\\src",
+        "run",
+        "server.py"
+      ]
+    },
+    "github": {
+      "command": "D:\\nodejs\\npx.cmd",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
+      }
+    }
+  }
+}

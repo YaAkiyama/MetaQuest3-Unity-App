@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github__get_file_contents",
+      "Bash(tree:*)",
+      "mcp__unityMCP__manage_asset",
+      "Bash(mkdir:*)",
+      "mcp__unityMCP__manage_editor",
+      "mcp__unityMCP__manage_gameobject"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
