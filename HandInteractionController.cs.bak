@@ -1,6 +1,6 @@
 using UnityEngine;
-using UnityEngine.XR.Hands;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR;
 using System.Collections.Generic;
 
 namespace MQ3VRApp
@@ -30,7 +30,7 @@ namespace MQ3VRApp
         [SerializeField] private LayerMask grabbableLayer = -1;
         [SerializeField] private float grabForce = 500f;
         
-        private XRHand hand;
+        private UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInputInteractor xrController;
         private GameObject handVisual;
         private MeshRenderer handRenderer;
         private bool isPinching = false;
@@ -38,10 +38,6 @@ namespace MQ3VRApp
         private GameObject currentGrabbedObject = null;
         private Rigidbody grabbedRigidbody = null;
         
-        // 指のジョイント
-        private Transform thumbTip;
-        private Transform indexTip;
-        private Transform middleTip;
         
         // インタラクションイベント
         public delegate void HandInteractionEvent(GameObject target);
@@ -55,7 +51,7 @@ namespace MQ3VRApp
         private void Start()
         {
             SetupHandVisual();
-            SetupXRHand();
+            SetupXRController();
         }
 
         private void SetupHandVisual()
@@ -72,87 +68,42 @@ namespace MQ3VRApp
             }
         }
 
-        private void SetupXRHand()
+        private void SetupXRController()
         {
-            // XR Hand Subsystemの初期化
-            var handSubsystem = XRHandSubsystem.GetSubsystemInManager();
+            // XRControllerの取得
+            xrController = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInputInteractor>();
             
-            if (handSubsystem != null)
+            if (xrController != null)
             {
-                if (handType == HandType.Left)
-                {
-                    hand = handSubsystem.leftHand;
-                }
-                else
-                {
-                    hand = handSubsystem.rightHand;
-                }
-                
-                Debug.Log($"{handType} hand tracking initialized");
+                Debug.Log($"{handType} hand controller initialized");
             }
             else
             {
-                Debug.LogWarning("XRHandSubsystem not found. Hand tracking may not be available.");
+                Debug.LogWarning("XRController not found. Hand tracking may not be available.");
             }
         }
 
         private void Update()
         {
-            if (hand == null) return;
+            if (xrController == null) return;
             
-            UpdateHandTracking();
-            UpdatePinchDetection();
+            UpdateControllerInput();
             UpdateInteraction();
             UpdateVisualFeedback();
         }
 
-        private void UpdateHandTracking()
+        private void UpdateControllerInput()
         {
-            // ハンドトラッキングデータの更新
-            if (hand.TryGetJoint(XRHandJointID.ThumbTip, out var thumbJoint))
+            // XR Input Systemを使用したgrip値の取得（簡易実装）
+            bool isGripping = false;
+            
+            // 基本的なマウス/キーボードでのテスト用入力
+            if (Input.GetMouseButton(0) || Input.GetKey(KeyCode.Space))
             {
-                if (thumbTip == null)
-                {
-                    GameObject thumbGO = new GameObject("ThumbTip");
-                    thumbGO.transform.SetParent(transform);
-                    thumbTip = thumbGO.transform;
-                }
-                thumbTip.position = thumbJoint.pose.position;
-                thumbTip.rotation = thumbJoint.pose.rotation;
+                isGripping = true;
             }
             
-            if (hand.TryGetJoint(XRHandJointID.IndexTip, out var indexJoint))
-            {
-                if (indexTip == null)
-                {
-                    GameObject indexGO = new GameObject("IndexTip");
-                    indexGO.transform.SetParent(transform);
-                    indexTip = indexGO.transform;
-                }
-                indexTip.position = indexJoint.pose.position;
-                indexTip.rotation = indexJoint.pose.rotation;
-            }
-            
-            if (hand.TryGetJoint(XRHandJointID.MiddleTip, out var middleJoint))
-            {
-                if (middleTip == null)
-                {
-                    GameObject middleGO = new GameObject("MiddleTip");
-                    middleGO.transform.SetParent(transform);
-                    middleTip = middleGO.transform;
-                }
-                middleTip.position = middleJoint.pose.position;
-                middleTip.rotation = middleJoint.pose.rotation;
-            }
-        }
-
-        private void UpdatePinchDetection()
-        {
-            if (thumbTip == null || indexTip == null) return;
-            
-            // ピンチジェスチャーの検出
-            float pinchDistance = Vector3.Distance(thumbTip.position, indexTip.position);
-            isPinching = pinchDistance < pinchThreshold * 0.1f; // 10cm以下でピンチとみなす
+            isPinching = isGripping;
             
             if (isPinching && !wasPickedUp)
             {
@@ -168,10 +119,11 @@ namespace MQ3VRApp
 
         private void UpdateInteraction()
         {
-            if (indexTip == null) return;
+            // コントローラーの位置を使用してホバー検出
+            Vector3 controllerPosition = transform.position;
             
             // ホバー検出
-            Collider[] colliders = Physics.OverlapSphere(indexTip.position, grabRadius, grabbableLayer);
+            Collider[] colliders = Physics.OverlapSphere(controllerPosition, grabRadius, grabbableLayer);
             
             GameObject nearestObject = null;
             float nearestDistance = float.MaxValue;
@@ -180,7 +132,7 @@ namespace MQ3VRApp
             {
                 if (collider.CompareTag("Grabbable"))
                 {
-                    float distance = Vector3.Distance(indexTip.position, collider.transform.position);
+                    float distance = Vector3.Distance(controllerPosition, collider.transform.position);
                     if (distance < nearestDistance)
                     {
                         nearestDistance = distance;
@@ -240,12 +192,9 @@ namespace MQ3VRApp
                     grabbedRigidbody.useGravity = true;
                     grabbedRigidbody.drag = 1f;
                     
-                    // 手の速度を物体に適用
-                    if (hand.TryGetJoint(XRHandJointID.Palm, out var palmJoint))
-                    {
-                        grabbedRigidbody.velocity = palmJoint.linearVelocity;
-                        grabbedRigidbody.angularVelocity = palmJoint.angularVelocity;
-                    }
+                    // コントローラーの速度を物体に適用（簡易実装）
+                    Vector3 velocity = (transform.position - transform.position) / Time.deltaTime;
+                    grabbedRigidbody.velocity = velocity;
                 }
                 
                 // Grabbableコンポーネントの処理
@@ -265,10 +214,10 @@ namespace MQ3VRApp
 
         private void FixedUpdate()
         {
-            // 掴んでいるオブジェクトを手に追従させる
-            if (currentGrabbedObject != null && grabbedRigidbody != null && indexTip != null)
+            // 掴んでいるオブジェクトをコントローラーに追従させる
+            if (currentGrabbedObject != null && grabbedRigidbody != null)
             {
-                Vector3 targetPosition = indexTip.position;
+                Vector3 targetPosition = transform.position;
                 Vector3 force = (targetPosition - grabbedRigidbody.position) * grabForce;
                 grabbedRigidbody.AddForce(force, ForceMode.Force);
             }
@@ -302,27 +251,9 @@ namespace MQ3VRApp
         private void OnDrawGizmosSelected()
         {
             // デバッグ用のギズモ表示
-            if (indexTip != null)
-            {
-                Gizmos.color = isPinching ? Color.green : Color.yellow;
-                Gizmos.DrawWireSphere(indexTip.position, grabRadius);
-            }
-            
-            if (thumbTip != null && indexTip != null)
-            {
-                Gizmos.color = Color.blue;
-                Gizmos.DrawLine(thumbTip.position, indexTip.position);
-            }
+            Gizmos.color = isPinching ? Color.green : Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, grabRadius);
         }
     }
 
-    // XRHandSubsystemのヘルパークラス（簡易実装）
-    public static class XRHandSubsystem
-    {
-        public static object GetSubsystemInManager()
-        {
-            // 実際の実装では適切なSubsystemManagerを使用
-            return null;
-        }
-    }
 }

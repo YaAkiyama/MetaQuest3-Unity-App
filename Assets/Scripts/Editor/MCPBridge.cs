@@ -11,7 +11,7 @@ namespace MCPBridge
 {
     public class MCPBridgeWindow : EditorWindow
     {
-        private static TCPListener listener;
+        private static TcpListener listener;
         private static Thread listenerThread;
         private static bool isRunning = false;
         private static int port = 3000;

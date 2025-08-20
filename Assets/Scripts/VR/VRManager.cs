@@ -55,7 +55,7 @@ namespace MQ3VRApp
 
         private void InitializeVR()
         {
-            Debug.Log("Initializing VR System...");
+            UnityEngine.Debug.Log("Initializing VR System...");
             
             // XRデバイスの初期化
             SubsystemManager.GetInstances(inputSubsystems);
@@ -63,7 +63,7 @@ namespace MQ3VRApp
             foreach (var subsystem in inputSubsystems)
             {
                 subsystem.Start();
-                Debug.Log($"Started XR Input Subsystem: {subsystem.GetType().Name}");
+                UnityEngine.Debug.Log($"Started XR Input Subsystem: {subsystem.GetType().Name}");
             }
 
             // VRカメラの設定
@@ -88,7 +88,7 @@ namespace MQ3VRApp
                 
                 if (xrOrigin == null)
                 {
-                    Debug.LogWarning("XR Origin not found. Creating new XR Origin...");
+                    UnityEngine.Debug.LogWarning("XR Origin not found. Creating new XR Origin...");
                     CreateXROrigin();
                 }
             }
@@ -122,8 +122,8 @@ namespace MQ3VRApp
             
             // TrackedPoseDriverの追加（カメラトラッキング用）
             var poseDriver = cameraGO.AddComponent<UnityEngine.InputSystem.XR.TrackedPoseDriver>();
-            poseDriver.positionAction = UnityEngine.InputSystem.InputAction.FromBinding("<XRHMD>/centerEyePosition");
-            poseDriver.rotationAction = UnityEngine.InputSystem.InputAction.FromBinding("<XRHMD>/centerEyeRotation");
+            poseDriver.positionAction = new UnityEngine.InputSystem.InputAction(binding: "<XRHMD>/centerEyePosition");
+            poseDriver.rotationAction = new UnityEngine.InputSystem.InputAction(binding: "<XRHMD>/centerEyeRotation");
         }
 
         private void ConfigureInputMode()
@@ -133,14 +133,14 @@ namespace MQ3VRApp
             {
                 leftHandModel.SetActive(true);
                 rightHandModel.SetActive(true);
-                Debug.Log("Hand tracking enabled");
+                UnityEngine.Debug.Log("Hand tracking enabled");
             }
             
             if (enableControllers && leftController != null && rightController != null)
             {
                 leftController.SetActive(!enableHandTracking);
                 rightController.SetActive(!enableHandTracking);
-                Debug.Log($"Controllers {(enableHandTracking ? "disabled" : "enabled")}");
+                UnityEngine.Debug.Log($"Controllers {(enableHandTracking ? "disabled" : "enabled")}");
             }
         }
 
@@ -162,7 +162,7 @@ namespace MQ3VRApp
         {
             // ビューの再センタリング
             UnityEngine.XR.InputTracking.Recenter();
-            Debug.Log("View recentered");
+            UnityEngine.Debug.Log("View recentered");
         }
 
         private void OnApplicationPause(bool pauseStatus)

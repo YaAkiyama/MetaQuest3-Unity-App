@@ -1,0 +1,487 @@
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using System.Collections.Generic;
+using MQ3VRApp.Media;
+using MQ3VRApp.Player;
+
+namespace MQ3VRApp.UI
+{
+    /// <summary>
+    /// VRメインメニューパネル
+    /// アプリケーションの主要機能へのアクセスを提供
+    /// </summary>
+    public class MainMenuPanel : VRMediaPanel
+    {
+        [Header("Main Menu Sections")]
+        [SerializeField] private Transform mediaLibrarySection;
+        [SerializeField] private Transform playbackControlSection;
+        [SerializeField] private Transform settingsSection;
+        [SerializeField] private Transform infoSection;
+        
+        [Header("Menu References")]
+        [SerializeField] private MediaController mediaController;
+        [SerializeField] private VRPlayerController playerController;
+        
+        [Header("UI Elements")]
+        [SerializeField] private TextMeshProUGUI titleText;
+        [SerializeField] private TextMeshProUGUI statusText;
+        [SerializeField] private Button mediaLibraryButton;
+        [SerializeField] private Button settingsButton;
+        [SerializeField] private Button exitButton;
+        
+        [Header("Media Library UI")]
+        [SerializeField] private ScrollRect mediaScrollView;
+        [SerializeField] private Transform mediaButtonContainer;
+        [SerializeField] private GameObject mediaButtonPrefab;
+        
+        [Header("Playback Controls")]
+        [SerializeField] private Button playButton;
+        [SerializeField] private Button pauseButton;
+        [SerializeField] private Button nextButton;
+        [SerializeField] private Button previousButton;
+        [SerializeField] private Button shuffleButton;
+        [SerializeField] private Button repeatButton;
+        
+        [Header("Settings Controls")]
+        [SerializeField] private Slider rotationSpeedSlider;
+        [SerializeField] private Toggle autoRotationToggle;
+        [SerializeField] private Toggle autoPlayToggle;
+        [SerializeField] private Slider volumeSlider;
+        
+        [Header("Visual Settings")]
+        [SerializeField] private Color selectedButtonColor = new Color(0.2f, 0.8f, 0.4f, 0.9f);
+        [SerializeField] private Color normalButtonColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+        
+        private List<Button> mediaButtons = new List<Button>();
+        private List<PanoramaManager.MediaContent> currentMediaList;
+        private PanoramaManager.MediaContent selectedMedia;
+        private MenuState currentMenuState = MenuState.Main;
+        
+        public enum MenuState
+        {
+            Main,
+            MediaLibrary,
+            PlaybackControls,
+            Settings,
+            Info
+        }
+        
+        protected override void Awake()
+        {
+            base.Awake();
+            InitializeMainMenu();
+        }
+        
+        private void Start()
+        {
+            SetupMenuNavigation();
+            LoadMediaLibrary();
+            UpdateMenuState(MenuState.Main);
+        }
+        
+        private void OnEnable()
+        {
+            // イベントの登録
+            if (mediaController != null)
+            {
+                mediaController.OnMediaChanged += OnMediaChanged;
+                mediaController.OnPlaybackStarted += OnPlaybackStarted;
+                mediaController.OnPlaybackStopped += OnPlaybackStopped;
+            }
+        }
+        
+        private void OnDisable()
+        {
+            // イベントの解除
+            if (mediaController != null)
+            {
+                mediaController.OnMediaChanged -= OnMediaChanged;
+                mediaController.OnPlaybackStarted -= OnPlaybackStarted;
+                mediaController.OnPlaybackStopped -= OnPlaybackStopped;
+            }
+        }
+        
+        private void InitializeMainMenu()
+        {
+            // MediaControllerの取得
+            if (mediaController == null)
+            {
+                mediaController = FindObjectOfType<MediaController>();
+            }
+            
+            // VRPlayerControllerの取得
+            if (playerController == null)
+            {
+                playerController = FindObjectOfType<VRPlayerController>();
+            }
+            
+            // タイトルテキストの設定
+            if (titleText != null)
+            {
+                titleText.text = "VR Media Viewer";
+            }
+            
+            UnityEngine.Debug.Log("MainMenuPanel initialized");
+        }
+        
+        private void SetupMenuNavigation()
+        {
+            // メインメニューボタンの設定
+            if (mediaLibraryButton != null)
+            {
+                mediaLibraryButton.onClick.AddListener(() => UpdateMenuState(MenuState.MediaLibrary));
+            }
+            
+            if (settingsButton != null)
+            {
+                settingsButton.onClick.AddListener(() => UpdateMenuState(MenuState.Settings));
+            }
+            
+            if (exitButton != null)
+            {
+                exitButton.onClick.AddListener(OnExitApplication);
+            }
+            
+            // 再生制御ボタンの設定
+            SetupPlaybackControls();
+            
+            // 設定コントロールの設定
+            SetupSettingsControls();
+        }
+        
+        private void SetupPlaybackControls()
+        {
+            if (playButton != null)
+            {
+                playButton.onClick.AddListener(() => {
+                    if (selectedMedia != null && mediaController != null)
+                    {
+                        mediaController.LoadMedia(selectedMedia);
+                    }
+                });
+            }
+            
+            if (pauseButton != null)
+            {
+                pauseButton.onClick.AddListener(() => {
+                    mediaController?.TogglePlayback();
+                });
+            }
+            
+            if (nextButton != null)
+            {
+                nextButton.onClick.AddListener(() => {
+                    mediaController?.PlayNext();
+                });
+            }
+            
+            if (previousButton != null)
+            {
+                previousButton.onClick.AddListener(() => {
+                    mediaController?.PlayPrevious();
+                });
+            }
+            
+            if (shuffleButton != null)
+            {
+                shuffleButton.onClick.AddListener(() => {
+                    mediaController?.ToggleShuffle();
+                    UpdateShuffleButtonState();
+                });
+            }
+            
+            if (repeatButton != null)
+            {
+                repeatButton.onClick.AddListener(() => {
+                    mediaController?.ToggleRepeat();
+                    UpdateRepeatButtonState();
+                });
+            }
+        }
+        
+        private void SetupSettingsControls()
+        {
+            // 自動回転設定
+            if (autoRotationToggle != null)
+            {
+                autoRotationToggle.onValueChanged.AddListener((value) => {
+                    mediaController?.ToggleAutoRotation();
+                });
+            }
+            
+            // 自動再生設定
+            if (autoPlayToggle != null)
+            {
+                autoPlayToggle.onValueChanged.AddListener((value) => {
+                    mediaController?.ToggleAutoPlay();
+                });
+            }
+            
+            // 回転速度設定
+            if (rotationSpeedSlider != null)
+            {
+                rotationSpeedSlider.onValueChanged.AddListener((value) => {
+                    // PanoramaManagerの回転速度を調整
+                    UnityEngine.Debug.Log($"Rotation speed changed: {value}");
+                });
+            }
+            
+            // ボリューム設定
+            if (volumeSlider != null)
+            {
+                volumeSlider.onValueChanged.AddListener((value) => {
+                    AudioListener.volume = value;
+                });
+                volumeSlider.value = AudioListener.volume;
+            }
+        }
+        
+        private void LoadMediaLibrary()
+        {
+            if (mediaController == null || mediaButtonContainer == null) return;
+            
+            // 既存のボタンをクリア
+            ClearMediaButtons();
+            
+            // メディアリストを取得
+            currentMediaList = mediaController.GetCurrentPlaylist();
+            
+            // メディアボタンを生成
+            foreach (var media in currentMediaList)
+            {
+                CreateMediaButton(media);
+            }
+            
+            UpdateStatusText($"Loaded {currentMediaList.Count} media items");
+        }
+        
+        private void CreateMediaButton(PanoramaManager.MediaContent media)
+        {
+            if (mediaButtonPrefab == null || mediaButtonContainer == null) return;
+            
+            GameObject buttonObject = Instantiate(mediaButtonPrefab, mediaButtonContainer);
+            Button button = buttonObject.GetComponent<Button>();
+            TextMeshProUGUI buttonText = buttonObject.GetComponentInChildren<TextMeshProUGUI>();
+            
+            if (button != null && buttonText != null)
+            {
+                // ボタンテキストの設定
+                string mediaTypeIcon = media.type == PanoramaManager.MediaType.Video ? "🎥" : "🖼️";
+                buttonText.text = $"{mediaTypeIcon} {media.name}";
+                
+                // ボタンクリックイベントの設定
+                button.onClick.AddListener(() => OnMediaButtonClicked(media, button));
+                
+                // UIButtonInteractableの設定
+                UIButtonInteractable buttonInteractable = buttonObject.GetComponent<UIButtonInteractable>();
+                if (buttonInteractable == null)
+                {
+                    buttonInteractable = buttonObject.AddComponent<UIButtonInteractable>();
+                }
+                
+                mediaButtons.Add(button);
+            }
+        }
+        
+        private void OnMediaButtonClicked(PanoramaManager.MediaContent media, Button clickedButton)
+        {
+            // 選択されたメディアを設定
+            selectedMedia = media;
+            
+            // ボタンの色を更新
+            UpdateMediaButtonColors(clickedButton);
+            
+            // メディアを読み込み
+            if (mediaController != null)
+            {
+                mediaController.LoadMedia(media);
+            }
+            
+            // 再生制御メニューに切り替え
+            UpdateMenuState(MenuState.PlaybackControls);
+            
+            UpdateStatusText($"Selected: {media.name}");
+        }
+        
+        private void UpdateMediaButtonColors(Button selectedButton)
+        {
+            foreach (var button in mediaButtons)
+            {
+                Image buttonImage = button.GetComponent<Image>();
+                if (buttonImage != null)
+                {
+                    buttonImage.color = (button == selectedButton) ? selectedButtonColor : normalButtonColor;
+                }
+            }
+        }
+        
+        private void ClearMediaButtons()
+        {
+            foreach (var button in mediaButtons)
+            {
+                if (button != null)
+                {
+                    DestroyImmediate(button.gameObject);
+                }
+            }
+            mediaButtons.Clear();
+        }
+        
+        private void UpdateMenuState(MenuState newState)
+        {
+            currentMenuState = newState;
+            
+            // 全セクションを非表示
+            SetSectionActive(mediaLibrarySection, false);
+            SetSectionActive(playbackControlSection, false);
+            SetSectionActive(settingsSection, false);
+            SetSectionActive(infoSection, false);
+            
+            // 対象セクションを表示
+            switch (newState)
+            {
+                case MenuState.Main:
+                    UpdateStatusText("Welcome to VR Media Viewer");
+                    break;
+                    
+                case MenuState.MediaLibrary:
+                    SetSectionActive(mediaLibrarySection, true);
+                    LoadMediaLibrary();
+                    break;
+                    
+                case MenuState.PlaybackControls:
+                    SetSectionActive(playbackControlSection, true);
+                    UpdatePlaybackControls();
+                    break;
+                    
+                case MenuState.Settings:
+                    SetSectionActive(settingsSection, true);
+                    UpdateStatusText("Settings");
+                    break;
+                    
+                case MenuState.Info:
+                    SetSectionActive(infoSection, true);
+                    UpdateStatusText("Information");
+                    break;
+            }
+        }
+        
+        private void SetSectionActive(Transform section, bool active)
+        {
+            if (section != null)
+            {
+                section.gameObject.SetActive(active);
+            }
+        }
+        
+        private void UpdatePlaybackControls()
+        {
+            if (mediaController == null) return;
+            
+            MediaController.PlaylistInfo playlistInfo = mediaController.GetPlaylistInfo();
+            
+            // ボタンの状態を更新
+            UpdateShuffleButtonState();
+            UpdateRepeatButtonState();
+            
+            // 現在のメディア情報を表示
+            PanoramaManager.MediaContent currentMedia = mediaController.GetCurrentMedia();
+            if (currentMedia != null)
+            {
+                UpdateStatusText($"Playing: {currentMedia.name} ({playlistInfo.currentIndex + 1}/{playlistInfo.totalItems})");
+            }
+        }
+        
+        private void UpdateShuffleButtonState()
+        {
+            if (shuffleButton != null && mediaController != null)
+            {
+                MediaController.PlaylistInfo info = mediaController.GetPlaylistInfo();
+                Image buttonImage = shuffleButton.GetComponent<Image>();
+                if (buttonImage != null)
+                {
+                    buttonImage.color = info.shuffleEnabled ? selectedButtonColor : normalButtonColor;
+                }
+            }
+        }
+        
+        private void UpdateRepeatButtonState()
+        {
+            if (repeatButton != null && mediaController != null)
+            {
+                MediaController.PlaylistInfo info = mediaController.GetPlaylistInfo();
+                Image buttonImage = repeatButton.GetComponent<Image>();
+                if (buttonImage != null)
+                {
+                    buttonImage.color = info.repeatEnabled ? selectedButtonColor : normalButtonColor;
+                }
+            }
+        }
+        
+        private void UpdateStatusText(string message)
+        {
+            if (statusText != null)
+            {
+                statusText.text = message;
+            }
+        }
+        
+        private void OnMediaChanged(PanoramaManager.MediaContent content)
+        {
+            selectedMedia = content;
+            UpdateStatusText($"Now playing: {content.name}");
+        }
+        
+        private void OnPlaybackStarted(PanoramaManager.MediaContent content)
+        {
+            UpdateStatusText($"Started: {content.name}");
+        }
+        
+        private void OnPlaybackStopped(PanoramaManager.MediaContent content)
+        {
+            UpdateStatusText("Playback stopped");
+        }
+        
+        private void OnExitApplication()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+        
+        /// <summary>
+        /// メインメニューに戻る
+        /// </summary>
+        public void ReturnToMainMenu()
+        {
+            UpdateMenuState(MenuState.Main);
+        }
+        
+        /// <summary>
+        /// メディアライブラリを再読み込み
+        /// </summary>
+        public void RefreshMediaLibrary()
+        {
+            LoadMediaLibrary();
+        }
+        
+        /// <summary>
+        /// 現在のメニュー状態を取得
+        /// </summary>
+        public MenuState GetCurrentMenuState()
+        {
+            return currentMenuState;
+        }
+        
+        /// <summary>
+        /// 特定のメニューセクションに直接移動
+        /// </summary>
+        public void NavigateToSection(MenuState targetState)
+        {
+            UpdateMenuState(targetState);
+        }
+    }
+}
